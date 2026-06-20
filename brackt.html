@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadro de Torneo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --bg: #0a0a0e;
+    --bg-deep: #050507;
+    --panel: #14141b;
+    --panel-hi: #1c1c26;
+    --line: #2a2a36;
+    --text: #f0eee8;
+    --text-dim: #8a8896;
+    --acc: #ff4d4d;
+    --acc-glow: rgba(255,77,77,0.45);
+    --win: #d4ff3d;
+    --win-glow: rgba(212,255,61,0.55);
+    --gold: #ffb020;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(255,77,77,0.08), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(45,212,160,0.07), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    min-height:100vh;
+    padding:44px 16px 90px;
+    overflow-x:hidden;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.5;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  header{
+    text-align:center;
+    max-width:720px;
+    margin:0 auto 6px;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    color:var(--acc);
+    font-weight:600;
+  }
+
+  h1{
+    font-family:'Archivo Black', sans-serif;
+    font-size:clamp(36px, 7vw, 64px);
+    line-height:0.92;
+    margin:12px 0 8px;
+    letter-spacing:-0.01em;
+    text-shadow: 0 0 40px rgba(255,77,77,0.25);
+  }
+  h1 span{ color:var(--acc); }
+
+  .sub{
+    color:var(--text-dim);
+    font-size:14.5px;
+    max-width:460px;
+    margin:0 auto;
+  }
+
+  /* SIZE SELECTOR */
+  .size-select{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:30px auto 14px;
+    flex-wrap:wrap;
+  }
+  .size-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    padding:10px 22px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:var(--panel);
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .size-btn:hover{ border-color:var(--acc); color:var(--text); }
+  .size-btn.active{
+    background:var(--acc);
+    border-color:var(--acc);
+    color:#1a0606;
+    box-shadow:0 0 22px var(--acc-glow);
+  }
+
+  .toolbar{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:0 auto 50px;
+    flex-wrap:wrap;
+  }
+  .toolbar button{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:999px;
+    border:1.5px solid var(--line);
+    background:transparent;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .toolbar button:hover{ border-color:var(--text); color:var(--text); }
+
+  .hint{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin:0 auto 36px;
+    letter-spacing:0.02em;
+  }
+  .hint b{ color:var(--win); }
+
+  /* ============ BRACKET ============ */
+
+  .bracket-wrap{
+    max-width:1500px;
+    margin:0 auto;
+    overflow-x:auto;
+    padding:10px 4px 24px;
+  }
+
+  .bracket{
+    display:flex;
+    align-items:center;
+    min-width:max-content;
+    gap:0;
+    position:relative;
+  }
+
+  .round{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+    min-width:218px;
+    margin-right:46px;
+    height:100%;
+  }
+
+  .round-head{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:20px;
+  }
+
+  .round-body{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+    flex:1;
+    height:100%;
+  }
+
+  .match{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin:14px 0;
+  }
+
+  .player{
+    position:relative;
+    border-radius:9px;
+    border:1.5px solid var(--line);
+    background:var(--panel);
+    transition: all .14s ease;
+    display:flex;
+    align-items:stretch;
+    min-height:46px;
+    overflow:hidden;
+  }
+  .player .label{
+    flex:1;
+    display:flex;
+    align-items:center;
+    padding:0 14px;
+    font-weight:600;
+    font-size:14px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .player .seed-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    color:var(--text-dim);
+    flex-shrink:0;
+  }
+
+  .player.editable:hover{ border-color:#444; background:var(--panel-hi); }
+  .player.editable input{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+  }
+  .player.editable input::placeholder{ color:#54525e; }
+
+  /* botón explícito de "elegir ganador" */
+  .pick-btn{
+    flex-shrink:0;
+    width:52px;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-left:1.5px solid var(--line);
+    background:rgba(212,255,61,0.1);
+    color:var(--win);
+    font-size:19px;
+    font-weight:700;
+    cursor:pointer;
+    transition: all .12s ease;
+  }
+  .pick-btn:hover{
+    background:var(--win);
+    color:#0c0c0e;
+  }
+  .pick-btn:active{
+    transform:scale(0.96);
+  }
+  .pick-btn.disabled{
+    opacity:0.25;
+    cursor:default;
+    pointer-events:none;
+    background:transparent;
+    color:var(--text-dim);
+  }
+  .pick-btn .check-icon{
+    font-size:16px;
+    line-height:1;
+  }
+
+  .player.winner{
+    border-color:var(--win);
+    background:var(--panel);
+    box-shadow:0 0 0 1px var(--win), 0 0 18px rgba(212,255,61,0.35);
+  }
+  .player.winner .label{
+    color:var(--win);
+    font-weight:700;
+  }
+  .player.winner .pick-btn{
+    width:52px;
+    background:var(--win);
+    color:#0c0c0e;
+  }
+  .player.winner .pick-btn .check-icon::before{ content:"✓"; }
+
+  .player.loser{
+    opacity:0.4;
+  }
+  .player.loser .label{
+    text-decoration:line-through;
+    text-decoration-color:var(--acc);
+  }
+  .player.loser .pick-btn{
+    opacity:0.3;
+  }
+
+  .player.bye{
+    border-style:dashed;
+    color:var(--text-dim);
+    font-style:italic;
+    cursor:default;
+  }
+  .player.bye:hover{ transform:none; border-color:var(--line); background:var(--panel); }
+
+  .vs-gap{
+    height:1px;
+    background:var(--line);
+    margin:0 6px;
+  }
+
+  /* connectors svg overlay (posicionado con JS sobre el bracket) */
+  .connectors-overlay{
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    overflow:visible;
+  }
+  .connectors-overlay path{
+    fill:none;
+    stroke:var(--line);
+    stroke-width:2;
+  }
+  .connectors-overlay path.active{
+    stroke:var(--win);
+    filter:drop-shadow(0 0 4px var(--win-glow));
+  }
+
+  /* champion */
+  .champion-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-width:230px;
+    padding-left:10px;
+  }
+  .champion-box{
+    width:210px;
+    padding:30px 18px;
+    border-radius:16px;
+    border:2px solid var(--gold);
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,176,32,0.18), transparent 70%),
+      var(--panel);
+    text-align:center;
+    box-shadow:0 0 40px rgba(255,176,32,0.15);
+    position:relative;
+  }
+  .champion-box .trophy{ font-size:34px; display:block; margin-bottom:10px; filter:drop-shadow(0 0 10px rgba(255,176,32,0.5)); }
+  .champion-name{
+    font-family:'Archivo Black', sans-serif;
+    font-size:19px;
+    color:var(--gold);
+    word-break:break-word;
+    line-height:1.1;
+  }
+  .champion-name.empty{
+    color:var(--text-dim);
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:500;
+    font-size:13px;
+    font-style:italic;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:56px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-dim);
+    letter-spacing:0.06em;
+  }
+
+  @media (max-width: 720px){
+    body{ padding:30px 10px 70px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Eliminación directa</div>
+  <h1>EL <span>CUADRO</span></h1>
+  <p class="sub">Elige el tamaño, escribe los nombres y pulsa el botón ✓ junto al ganador de cada duelo para avanzarlo.</p>
+</header>
+
+<div class="size-select" id="sizeSelect">
+  <button class="size-btn" data-size="8">8 personas</button>
+  <button class="size-btn" data-size="12">12 personas</button>
+</div>
+
+<p class="hint">Pulsa el botón <b>✓</b> junto al nombre del ganador para mandarlo a la siguiente ronda</p>
+
+<div class="toolbar">
+  <button onclick="randomFill()">Rellenar ejemplo</button>
+  <button onclick="resetAll()">Vaciar todo</button>
+</div>
+
+<div class="bracket-wrap">
+  <div class="bracket" id="bracket"></div>
+</div>
+
+<footer>HECHO A MANO · LOS DATOS VIVEN SOLO EN ESTA PESTAÑA</footer>
+
+<script>
+/* =========================================================
+   MODELO
+   - size: 8, 12 o 16
+   - Para 12: usamos un bracket de 16 plazas donde 4 posiciones
+     son BYE automático (avanzan solas), simulando un cuadro real de 12.
+   - rounds: array de rondas. rounds[0] = primera ronda (con players reales/bye)
+     Cada ronda es un array de "slots" (nombre o null).
+     winners: array paralelo a las rondas siguientes, indica el ganador elegido por match.
+========================================================= */
+
+const SIZE_CONFIG = {
+  8:  { total: 8,  byes: 0, roundNames: ["Cuartos","Semifinal","Final"] },
+  12: { total: 16, byes: 4, roundNames: ["Dieciseisavos","Cuartos","Semifinal","Final"] },
+};
+
+let currentSize = 8;
+let names = [];        // nombres ingresados por el usuario, longitud = total plazas reales (sin contar byes)
+let isBye = [];         // boolean array longitud total(16) marcando posiciones bye
+let picks = [];         // picks[roundIndex] = array de elegido (0/1) por match, o null
+
+function initState(size){
+  currentSize = size;
+  const cfg = SIZE_CONFIG[size];
+  const total = cfg.total;
+
+  isBye = new Array(total).fill(false);
+  if(cfg.byes > 0){
+    // distribuir byes en posiciones espaciadas: 0, 4, 8, 12 (cabezas de serie)
+    const spacing = total / cfg.byes;
+    for(let i=0;i<cfg.byes;i++){
+      isBye[Math.floor(i*spacing)] = true;
+    }
+  }
+
+  names = new Array(total).fill("");
+  const numRounds = Math.log2(total);
+  picks = [];
+  for(let r=0;r<numRounds;r++){
+    const matchesInRound = total / Math.pow(2, r+1);
+    picks.push(new Array(matchesInRound).fill(null));
+  }
+
+  render();
+}
+
+function getRoundCount(){
+  return SIZE_CONFIG[currentSize].roundNames.length;
+}
+
+// Devuelve el nombre que ocupa una posición de la ronda 0 (entrada)
+function entryLabel(idx){
+  if(isBye[idx]) return { text: "BYE", bye:true };
+  const n = names[idx];
+  return { text: n && n.trim() ? n : `Jugador ${idx+1}`, bye:false, raw:n };
+}
+
+// Calcula el "ganador" que llega a la entrada de una ronda r (r>=1) en la posición pos
+// resolviendo recursivamente desde la ronda 0.
+function resolve(round, pos){
+  if(round === 0){
+    return entryLabel(pos);
+  }
+  // en la ronda 'round', la posicion 'pos' viene del match (pos) de la ronda anterior
+  const prevRound = round - 1;
+  const matchIdx = pos;
+  const slotA = resolve(prevRound, matchIdx*2);
+  const slotB = resolve(prevRound, matchIdx*2+1);
+
+  // si uno es BYE y el otro no, el no-bye pasa automático
+  if(slotA.bye && !slotB.bye) return slotB;
+  if(slotB.bye && !slotA.bye) return slotA;
+  if(slotA.bye && slotB.bye) return { text:"BYE", bye:true };
+
+  const pick = picks[prevRound][matchIdx];
+  if(pick === null || pick === undefined) return { text:"", pending:true, optA:slotA, optB:slotB };
+  return pick === 0 ? slotA : slotB;
+}
+
+function matchCountInRound(round){
+  return SIZE_CONFIG[currentSize].total / Math.pow(2, round+1);
+}
+
+function render(){
+  const bracket = document.getElementById('bracket');
+  bracket.innerHTML = "";
+  const cfg = SIZE_CONFIG[currentSize];
+  const numRounds = cfg.roundNames.length;
+
+  for(let r=0; r<numRounds; r++){
+    const roundEl = document.createElement('div');
+    roundEl.className = 'round';
+
+    const head = document.createElement('div');
+    head.className = 'round-head';
+    head.textContent = cfg.roundNames[r];
+    roundEl.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'round-body';
+
+    const mCount = matchCountInRound(r);
+    for(let m=0; m<mCount; m++){
+      const matchEl = document.createElement('div');
+      matchEl.className = 'match';
+
+      const a = resolve(r, m*2);
+      const b = resolve(r, m*2+1);
+
+      matchEl.appendChild(buildPlayerEl(r, m, 0, a));
+      matchEl.appendChild(buildPlayerEl(r, m, 1, b));
+
+      body.appendChild(matchEl);
+    }
+
+    roundEl.appendChild(body);
+    bracket.appendChild(roundEl);
+  }
+
+  // overlay SVG para las líneas conectoras (se dibuja con coordenadas reales tras el layout)
+  const svgNS = "http://www.w3.org/2000/svg";
+  const overlay = document.createElementNS(svgNS, "svg");
+  overlay.setAttribute("class", "connectors-overlay");
+  bracket.appendChild(overlay);
+
+  // champion column
+  const champWrap = document.createElement('div');
+  champWrap.className = 'champion-col';
+  const championResolved = resolveChampion();
+
+  champWrap.innerHTML = `
+    <div class="champion-box">
+      <span class="trophy">🏆</span>
+      <div class="champion-name ${championResolved.text ? '' : 'empty'}">${championResolved.text || 'Aún sin definir'}</div>
+    </div>
+  `;
+  bracket.appendChild(champWrap);
+
+  // dibujar lineas conectoras con coordenadas reales (tras pintar el layout)
+  requestAnimationFrame(drawConnectors);
+}
+
+function drawConnectors(){
+  const bracket = document.getElementById('bracket');
+  const overlay = bracket.querySelector('.connectors-overlay');
+  if(!overlay) return;
+
+  const bracketRect = bracket.getBoundingClientRect();
+  overlay.setAttribute('width', bracketRect.width);
+  overlay.setAttribute('height', bracketRect.height);
+  overlay.setAttribute('viewBox', `0 0 ${bracketRect.width} ${bracketRect.height}`);
+  overlay.innerHTML = '';
+
+  const roundEls = Array.from(bracket.querySelectorAll('.round'));
+  const numRounds = roundEls.length;
+  const svgNS = "http://www.w3.org/2000/svg";
+
+  for(let r=0; r<numRounds-1; r++){
+    const thisRoundMatches = roundEls[r].querySelectorAll('.match');
+    const nextRoundMatches = roundEls[r+1].querySelectorAll('.match');
+
+    nextRoundMatches.forEach((nextMatchEl, m)=>{
+      const srcMatchA = thisRoundMatches[m*2];
+      const srcMatchB = thisRoundMatches[m*2+1];
+      if(!srcMatchA || !srcMatchB) return;
+
+      const rectA = srcMatchA.getBoundingClientRect();
+      const rectB = srcMatchB.getBoundingClientRect();
+      const targetPlayerTop = nextMatchEl.children[0].getBoundingClientRect();
+      const targetPlayerBottom = nextMatchEl.children[1].getBoundingClientRect();
+
+      const x0 = rectA.right - bracketRect.left;
+      const y0 = rectA.top + rectA.height/2 - bracketRect.top;
+      const y1 = rectB.top + rectB.height/2 - bracketRect.top;
+
+      const xTarget = targetPlayerTop.left - bracketRect.left;
+      const yTargetTop = targetPlayerTop.top + targetPlayerTop.height/2 - bracketRect.top;
+      const yTargetBottom = targetPlayerBottom.top + targetPlayerBottom.height/2 - bracketRect.top;
+      const xMid = x0 + (xTarget - x0) / 2;
+
+      const pickA = picks[r][m*2];
+      const pickB = picks[r][m*2+1];
+
+      const pathA = document.createElementNS(svgNS, "path");
+      pathA.setAttribute("d", `M${x0},${y0} H${xMid} V${yTargetTop} H${xTarget}`);
+      if(pickA !== null && pickA !== undefined) pathA.classList.add('active');
+      overlay.appendChild(pathA);
+
+      const pathB = document.createElementNS(svgNS, "path");
+      pathB.setAttribute("d", `M${x0},${y1} H${xMid} V${yTargetBottom} H${xTarget}`);
+      if(pickB !== null && pickB !== undefined) pathB.classList.add('active');
+      overlay.appendChild(pathB);
+    });
+  }
+}
+
+function resolveChampion(){
+  const lastRound = getRoundCount() - 1;
+  const slotA = resolve(lastRound, 0);
+  const slotB = resolve(lastRound, 1);
+  if(slotA.bye && !slotB.bye) return slotB;
+  if(slotB.bye && !slotA.bye) return slotA;
+  const pick = picks[lastRound] ? picks[lastRound][0] : null;
+  if(pick === null || pick === undefined) return { text:"" };
+  return pick === 0 ? slotA : slotB;
+}
+
+function buildPlayerEl(round, matchIdx, side, slotData){
+  const el = document.createElement('div');
+  el.className = 'player';
+
+  if(slotData.bye){
+    el.classList.add('bye');
+    el.innerHTML = `<span class="label">BYE</span>`;
+    return el;
+  }
+
+  // ronda 0: editable (input de texto) + botón de elegir aparte
+  if(round === 0){
+    el.classList.add('editable');
+    const idx = matchIdx*2 + side;
+    const placeholderNum = idx+1;
+
+    const pick = picks[0][matchIdx];
+    const isWinner = pick === side;
+    const isLoser = pick !== null && pick !== undefined && pick !== side;
+    if(isWinner) el.classList.add('winner');
+    if(isLoser) el.classList.add('loser');
+
+    el.innerHTML = `
+      <input type="text" maxlength="22" placeholder="Jugador ${placeholderNum}" value="${escapeHtml(names[idx]||"")}" data-idx="${idx}" />
+      <button type="button" class="pick-btn" title="Elegir como ganador">
+        <span class="check-icon">${isWinner ? '' : '✓'}</span>
+      </button>
+    `;
+
+    const input = el.querySelector('input');
+    input.addEventListener('input', (e)=>{
+      names[idx] = e.target.value;
+      refreshLabelsOnly();
+    });
+    input.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ e.target.blur(); }
+    });
+
+    const btn = el.querySelector('.pick-btn');
+    btn.addEventListener('click', ()=> selectWinner(round, matchIdx, side));
+
+    return el;
+  }
+
+  // rondas posteriores: nombre de solo lectura + botón de elegir
+  const isPending = slotData.pending;
+  if(isPending || !slotData.text){
+    el.classList.add('empty');
+    el.innerHTML = `
+      <span class="label">—</span>
+      <button type="button" class="pick-btn disabled"><span class="check-icon">✓</span></button>
+    `;
+    return el;
+  }
+
+  const pick = picks[round][matchIdx];
+  const isWinner = pick === side;
+  const isLoser = pick !== null && pick !== undefined && pick !== side;
+  if(isWinner) el.classList.add('winner');
+  if(isLoser) el.classList.add('loser');
+
+  el.innerHTML = `
+    <span class="label">${escapeHtml(slotData.text)}</span>
+    <button type="button" class="pick-btn" title="Elegir como ganador">
+      <span class="check-icon">${isWinner ? '' : '✓'}</span>
+    </button>
+  `;
+
+  const btn = el.querySelector('.pick-btn');
+  btn.addEventListener('click', ()=> selectWinner(round, matchIdx, side));
+
+  return el;
+}
+
+function selectWinner(round, matchIdx, side){
+  const current = picks[round][matchIdx];
+  picks[round][matchIdx] = current === side ? null : side;
+
+  // limpiar elecciones posteriores que dependían de este match
+  clearDownstream(round, matchIdx);
+  render();
+}
+
+function clearDownstream(round, matchIdx){
+  // el resultado de (round, matchIdx) alimenta a la posicion matchIdx en round+1,
+  // que pertenece al match floor(matchIdx/2) de esa ronda
+  let r = round + 1;
+  let pos = matchIdx;
+  while(r < getRoundCount()){
+    const nextMatch = Math.floor(pos/2);
+    if(picks[r][nextMatch] !== null && picks[r][nextMatch] !== undefined){
+      picks[r][nextMatch] = null;
+    }
+    pos = nextMatch;
+    r++;
+  }
+}
+
+function refreshLabelsOnly(){
+  // recalcular labels de rondas >0 y champion sin reconstruir inputs de ronda 0 (mantener foco)
+  // approach simple: re-render completo, salvo que perderiamos foco al escribir.
+  // Solucion: actualizamos solo los textos de los demas elementos pickable.
+  const cfg = SIZE_CONFIG[currentSize];
+  const numRounds = cfg.roundNames.length;
+  const bracket = document.getElementById('bracket');
+  const roundEls = bracket.querySelectorAll('.round');
+
+  for(let r=1; r<numRounds; r++){
+    const roundEl = roundEls[r];
+    if(!roundEl) continue;
+    const matches = roundEl.querySelectorAll('.match');
+    matches.forEach((matchEl, m)=>{
+      const players = matchEl.querySelectorAll('.player');
+      [0,1].forEach(side=>{
+        const slotData = resolve(r, m*2+side);
+        const oldEl = players[side];
+        if(!oldEl) return;
+        const newEl = buildPlayerEl(r, m, side, slotData);
+        oldEl.replaceWith(newEl);
+      });
+    });
+  }
+
+  // champion
+  const championResolved = resolveChampion();
+  const champEl = document.querySelector('.champion-name');
+  if(champEl){
+    champEl.textContent = championResolved.text || 'Aún sin definir';
+    champEl.classList.toggle('empty', !championResolved.text);
+  }
+
+  drawConnectors();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function randomFill(){
+  const pool = ["Marta","Iker","Lucía","Pablo","Noa","Adrián","Carla","Hugo","Sofía","Mateo","Vera","Diego","Elena","Bruno","Inés","Marcos"];
+  const total = SIZE_CONFIG[currentSize].total;
+  let p = 0;
+  for(let i=0;i<total;i++){
+    if(isBye[i]) continue;
+    names[i] = pool[p % pool.length];
+    p++;
+  }
+  render();
+}
+
+function resetAll(){
+  initState(currentSize);
+}
+
+// size selector wiring
+document.getElementById('sizeSelect').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.size-btn');
+  if(!btn) return;
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  initState(+btn.dataset.size);
+});
+
+// init default 8
+document.querySelector('.size-btn[data-size="8"]').classList.add('active');
+initState(8);
+
+// redibujar lineas si cambia el tamaño de ventana (responsive)
+let resizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(drawConnectors, 120);
+});
+</script>
+
+</body>
+</html>
